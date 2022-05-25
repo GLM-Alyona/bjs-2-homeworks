@@ -1,26 +1,28 @@
 // Задача № 1
-
 function cachingDecoratorNew(func) {
   let cache = [];
-  function wrapper(...rest) {
-    let hash = rest.join(',');
-    let existResult = cache.filter(cacheRecord => cacheRecord.hash === hash);
-    if (existResult.length === 1) {
-        console.log('Из кэша: ' + existResult[0].value);
-        return 'Из кэша: ' + existResult[0].value;
-    } 
-    else {
-      let value = func.call(this, ...rest);
-      console.log('Вычисляем: ' + value);
-      if (cache.length < 5) {   
-        cache.push({hash, value});
-      } 
-      else {
-        cache.unshift({hash, value});
-        cache.pop();
-      } 
-      return 'Вычисляем: ' + value;
-    }
+  
+  function wrapper(...args) {
+      const hash = args.join(',');
+      let idx = cache.findIndex((item)=> item.hash == hash); 
+      if (idx !== -1 ) { 
+          let result = cache[idx].result; 
+          console.log("Из кэша: " + result);
+          return "Из кэша: " + result;
+      }
+  
+      let result = func(...args); 
+      cache.push({         
+        result:result,
+        hash:hash
+      }); 
+      
+      if (cache.length > 5) { 
+        cache.shift() 
+      }
+
+      console.log("Вычисляем: " + result);
+      return "Вычисляем: " + result;  
   }
   return wrapper;
 }
@@ -29,34 +31,39 @@ function cachingDecoratorNew(func) {
 // Задача № 2
 
 function debounceDecoratorNew(func, ms) {
-
-  let timeout;
-  let repeatCall = false;
-
-  function wrapper(...rest) {
-
-    if (!repeatCall) {
-      func.apply(this, ...rest);
-      repeatCall = true;
-      return;
+  let allImmediate;
+  let flag = false;
+  return function wrapper(...args) {
+    if (!flag) {
+      func.apply(this, args);
     }
-    clearTimeout(timeout)
-    timeout = setTimeout(() => {
-      repeatCall = false
-      func.apply(this, ...rest)
-    }, ms)
-  }
-  return wrapper;
+  flag = true;
+  clearTimeout(allImmediate);
+    allImmediate = setTimeout(() => {
+      func.apply(this, args);
+    flag = false;
+    }, ms);
+  };
 }
 
 
 //Задача № 3
 
-function debounceDecorator2(debounceDecoratorNew) {
-  let count = 0;
-  function wrapper(...rest) {
-    wrapper.history = count++;
-    return debounceDecoratorNew.call(this, ...rest);
-  }
-  return wrapper;
+function debounceDecorator2(func, ms) {
+  let allImmediate;
+  let flag = false;
+  wrapper.count = 0;
+  function wrapper(...args) {
+  wrapper.count ++;
+    if (!flag) {
+      func.apply(this, args);  
+    }
+  flag = true;
+	clearTimeout(allImmediate);
+    allImmediate = setTimeout(() => {
+      func.apply(this, args);
+	    flag = false;
+    }, ms);  
+  };
+  return wrapper;  
 }
